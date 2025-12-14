@@ -175,12 +175,16 @@ def LoadMdl(data, mdl_list):
 
 def LoadConfig():
     baseDir = rapi.getDirForFilePath(rapi.getInputName())
+    cfgPath = None
+
     for f in os.listdir(baseDir):
         if f.lower().endswith(".cfg"):
             cfgPath = os.path.join(baseDir, f)
-        else:
-            noesis.messagePrompt("ERROR: The config file was not found in the model's folder.")
-            noesis.doException("The config file was not found in the model's folder.")
+            break 
+
+    if not cfgPath:
+        noesis.messagePrompt("ERROR: The config file was not found in the model's folder.")
+        noesis.doException("The config file was not found in the model's folder.")
             
     cfgData = rapi.loadIntoByteArray(cfgPath)
     text = cfgData.decode("ascii", "ignore")
@@ -274,5 +278,6 @@ def LoadSkeleton(path):
     
 
     
+
 
 
