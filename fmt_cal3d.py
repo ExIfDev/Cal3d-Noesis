@@ -126,9 +126,8 @@ def LoadMdl(data, mdl_list):
                         for _ in range(TEX_COUNT):
                             bs.readBytes(8)  # uv
 
-            # FACES (indices)
-            faceBytes = bs.readBytes(FACE_COUNT * 12)
-            iBuf.extend(faceBytes)
+            # FACES
+            iBuf.extend(bs.readBytes(FACE_COUNT * 12))
             
             
             #MATERIAL
@@ -272,4 +271,5 @@ def LoadSkeleton(path):
     return bones
     
     
+
     
