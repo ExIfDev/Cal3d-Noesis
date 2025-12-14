@@ -215,13 +215,11 @@ def LoadConfig():
             cfg["materials"].append(value)
 
     return cfg
-
+    
 def readLenStr(bs):
     sl = bs.readUInt()
-    if sl == 0:
-        return ""
     raw = bs.readBytes(sl)
-    return raw.split(b"\x00", 1)[0].decode("ascii", "ignore")
+    return noeAsciiFromBytes(raw)
 
 def GetTexture(path):
 
@@ -273,3 +271,4 @@ def LoadSkeleton(path):
     
 
     
+
