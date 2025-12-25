@@ -13,6 +13,8 @@ def registerNoesisTypes():
     noesis.setHandlerLoadModel(hmdl, LoadMdl)
     return 1
 
+
+
 def ChkMdl(data):
     bs  = NoeBitStream(data)
     val = bs.readBytes(4)
@@ -21,12 +23,16 @@ def ChkMdl(data):
 def LoadMdl(data, mdl_list):
     bs = NoeBitStream(data)
     rapi.rpgCreateContext() 
-    
+    animList = []
     cfg = LoadConfig()
     
     #SKELETON
     if cfg["skeleton"]:
         bones = LoadSkeleton(rapi.getDirForFilePath(rapi.getInputName())+cfg["skeleton"])
+    
+    if len(cfg["animations"]):
+        anim = LoadAnim(bones,rapi.getDirForFilePath(rapi.getInputName())+cfg["animations"][0])
+        animList.append(anim)
     
     MESH_FILE_COUNT = len(cfg["meshes"])
     matList = []
@@ -126,8 +132,9 @@ def LoadMdl(data, mdl_list):
                         for _ in range(TEX_COUNT):
                             bs.readBytes(8)  # uv
 
-            # FACES
-            iBuf.extend(bs.readBytes(FACE_COUNT * 12))
+            # FACES (indices)
+            faceBytes = bs.readBytes(FACE_COUNT * 12)
+            iBuf.extend(faceBytes)
             
             
             #MATERIAL
@@ -167,6 +174,8 @@ def LoadMdl(data, mdl_list):
     if bones:
         mdl.setBones(bones)
         rapi.setPreviewOption("setSkelToShow", "1")
+        if animList:
+            mdl.setAnims(animList)
     rapi.processCommands("-rotate 90 0 0")
     mdl_list.append(mdl)
     return 1
@@ -185,7 +194,8 @@ def LoadConfig():
     if not cfgPath:
         noesis.messagePrompt("ERROR: The config file was not found in the model's folder.")
         noesis.doException("The config file was not found in the model's folder.")
-            
+
+                
     cfgData = rapi.loadIntoByteArray(cfgPath)
     text = cfgData.decode("ascii", "ignore")
 
@@ -222,7 +232,7 @@ def LoadConfig():
             cfg["materials"].append(value)
 
     return cfg
-    
+
 def readLenStr(bs):
     sl = bs.readUInt()
     raw = bs.readBytes(sl)
@@ -257,7 +267,6 @@ def LoadSkeleton(path):
     print("SKEL PATH: ",path)
     
     bs = NoeBitStream(data)
-    
     bs.seek(8)
     
     bones = []
@@ -276,8 +285,40 @@ def LoadSkeleton(path):
     return bones
     
     
+def LoadAnim(bones, fPth):
+    print("ANIM PATH: ", fPth)
 
+    bs = NoeBitStream(rapi.loadIntoByteArray(fPth))
+    if bs.readString() != "CAF":
+        noesis.doException("Animation header check failed")
+    VER = bs.readInt()
+    A_LEN = bs.readFloat() #seconds
+    TRK_COUNT = bs.readInt()
+    kfBones = []
     
+    for trkIdx in range(TRK_COUNT):
+        
+        BIDX = bs.readInt()
+        KEY_CNT = bs.readInt()
+        rotKF = []
+        trsKF = []
 
 
+        for kf in range(KEY_CNT):
+            TIME = bs.readFloat() #seconds
 
+            Trs = NoeVec3.fromBytes(bs.readBytes(12)) 
+            rot = NoeQuat.fromBytes(bs.readBytes(16))
+            
+            trsKF.append(NoeKeyFramedValue(TIME, Trs))
+            rotKF.append(NoeKeyFramedValue(TIME, rot))
+        
+
+        trk = NoeKeyFramedBone(BIDX)
+
+        if rotKF: trk.setRotation(rotKF, noesis.NOEKF_ROTATION_QUATERNION_4)
+        if trsKF: trk.setTranslation(trsKF, noesis.NOEKF_TRANSLATION_VECTOR_3)
+
+        kfBones.append(trk)
+            
+    return NoeKeyFramedAnim(rapi.getLocalFileName(fPth), bones, kfBones, 30) 
