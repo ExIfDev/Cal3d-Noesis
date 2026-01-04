@@ -44,11 +44,6 @@ def LoadMdl(data, mdl_list):
         fileDat = rapi.loadIntoByteArray(filePth)
         MESH_NAME = rapi.getExtensionlessName(cfg["meshes"][_])
         bs = NoeBitStream(fileDat)
-
-        vBuf = bytearray()
-        iBuf = bytearray()
-        nBuf = bytearray()
-        uvBuf = bytearray()
         
         bs.readBytes(4)
         FILE_VER = bs.readInt()
